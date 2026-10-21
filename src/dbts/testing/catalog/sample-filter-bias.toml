@@ -1,0 +1,13 @@
+id = "sample-filter-bias"
+nome = "Viés por filtro de amostra"
+descricao = "O código filtra ${table} por `${predicate}`, o que pode excluir um segmento relevante da amostra."
+categoria = "metodologia"
+severidade = "media"
+padrao = "filter"
+titulo = "Linhas excluídas de ${table} pelo filtro ${predicate}"
+criterio = "A proporção excluidas/linhas deve ser justificada pela regra de negócio; proporções altas ou inesperadas indicam viés de seleção."
+sql = """
+SELECT COUNT(*) AS linhas,
+       COUNT_IF(NOT COALESCE(${predicate}, FALSE)) AS excluidas
+FROM ${table}
+"""

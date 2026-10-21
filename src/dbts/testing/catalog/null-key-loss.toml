@@ -1,0 +1,16 @@
+id = "null-key-loss"
+nome = "Perda por chave nula ou sem correspondência"
+descricao = "Linhas do lado esquerdo somem ou ficam sem atributos por chave nula ou sem par no lado direito."
+categoria = "integridade"
+severidade = "alta"
+padrao = "join"
+titulo = "Chaves nulas e órfãs em ${left_table}.${left_col} -> ${right_table}.${right_col}"
+criterio = "chaves_nulas e sem_correspondencia devem ser zero ou justificadas; proporções altas indicam perda de amostra."
+sql = """
+SELECT COUNT(*) AS linhas_esquerda,
+       COUNT_IF(l.${left_col} IS NULL) AS chaves_nulas,
+       COUNT_IF(l.${left_col} IS NOT NULL AND r.${right_col} IS NULL) AS sem_correspondencia
+FROM ${left_table} l
+LEFT JOIN (SELECT DISTINCT ${right_col} FROM ${right_table}) r
+  ON l.${left_col} = r.${right_col}
+"""

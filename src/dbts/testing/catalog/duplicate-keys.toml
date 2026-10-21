@@ -1,0 +1,16 @@
+id = "duplicate-keys"
+nome = "Chave duplicada"
+descricao = "Coluna com cara de identificador aparece repetida em uma tabela produzida pela esteira."
+categoria = "integridade"
+severidade = "media"
+padrao = "key_column"
+titulo = "Duplicidade de ${column} em ${table}"
+criterio = "Se ${column} deveria identificar a linha, o resultado deve vir vazio."
+sql = """
+SELECT ${column}, COUNT(*) AS ocorrencias
+FROM ${table}
+GROUP BY ${column}
+HAVING COUNT(*) > 1
+ORDER BY ocorrencias DESC
+LIMIT 100
+"""

@@ -1,0 +1,129 @@
+name: CI
+
+# Fluxo: branch de trabalho -> PR para dev -> PR de dev para main.
+# dev: lint, SAST e testes unitários (cobertura >= 95%) e build do pacote (deploy dev).
+# main: tudo de dev + teste de integração; só então publica a release (deploy prod).
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_FROZEN: "1"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src tests
+
+  sast:
+    name: sast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync
+      - name: bandit (código)
+        run: uv run bandit -q -r src -c pyproject.toml
+      - name: pip-audit (dependências)
+        run: |
+          uv export --no-emit-project --quiet > requirements-audit.txt
+          uv run pip-audit -r requirements-audit.txt --disable-pip --progress-spinner off
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync
+      - name: testes unitários (cobertura mínima 95%)
+        run: >
+          uv run pytest -m "not integration"
+          --cov-fail-under=95 --cov-report=xml --cov-report=term-missing
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+  integration:
+    name: integration
+    # Só para a main: em PRs que miram a main e no push para a main.
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    needs: [unit]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync
+      - run: uv run pytest -m integration --no-cov
+
+  deploy-dev:
+    name: deploy-dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [lint, sast, unit]
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dbts-dev-${{ github.sha }}
+          path: dist/
+          retention-days: 30
+
+  deploy-prod:
+    name: deploy-prod
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, sast, unit, integration]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv build
+      - name: publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(uv version --short)
+          tag="v${version}-build.${{ github.run_number }}"
+          gh release create "$tag" dist/* \
+            --target "${{ github.sha }}" \
+            --title "dbts ${tag}" \
+            --generate-notes

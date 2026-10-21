@@ -1,0 +1,80 @@
+# Relatório de Teste — {{ p.title }}
+
+| Campo | Valor |
+|---|---|
+| Identificador | `{{ p.id }}` |
+| Plano | {{ r.plan }} |
+| Hipótese | `{{ p.hypothesis_id }}` |
+| Severidade | {{ p.severity }} |
+| Origem do teste | {{ p.origin }} |
+| Executado em | {{ run.executed_at.isoformat() }} |
+| Query (hash) | `{{ run.query_hash }}` |
+| Status | {{ r.analysis.status if r.analysis else "pendente de análise" }} |
+
+## 1. O que é
+
+{{ p.description }}
+
+## 2. Por que foi feito
+
+O teste deriva da hipótese `{{ p.hypothesis_id }}`, de severidade {{ p.severity }}, levantada a partir do código nos seguintes pontos:
+
+{% for e in p.evidence -%}
+- `{{ e.repo }}/{{ e.path }}:{{ e.line }}` (commit `{{ e.commit_sha[:8] }}`)
+{% else -%}
+- Teste proposto diretamente pelo validador, sem evidência extraída do código.
+{% endfor %}
+## 3. O que se quis testar
+
+{{ p.criterio }}
+
+## 4. Como foi desenhado
+
+{% if p.params -%}
+Parâmetros:
+
+{% for key, value in p.params | dictsort -%}
+- `{{ key }}` = `{{ value }}`
+{% endfor %}
+{% endif -%}
+Query executada no Athena (execução `{{ run.execution_id }}`), após {{ run.fixes }} correção(ões):
+
+```sql
+{{ r.sql }}
+```
+
+Query armazenada em `{{ run.query_path }}`.
+
+## 5. Resultados
+
+- Linhas retornadas: {{ run.rows }}
+- Dados escaneados: {{ run.bytes_scanned }} bytes
+{% for name, location in run.results | dictsort -%}
+- Resultado ({{ name }}): `{{ location }}`
+{% endfor %}
+{% if r.columns -%}
+| {{ r.columns | join(" | ") }} |
+|{% for _ in r.columns %}---|{% endfor %}
+{% for row in r.preview -%}
+| {% for value in row %}{{ value | cell }} | {% endfor %}
+{% endfor %}
+{% if run.rows > r.preview | length -%}
+_Exibidas {{ r.preview | length }} de {{ run.rows }} linhas._
+{% endif %}
+{% endif -%}
+## 6. Análise
+
+{% if r.analysis -%}
+{{ r.analysis.analise }}
+
+> Texto redigido por LLM (`{{ r.analysis_model }}`); deve ser revisado pelo validador.
+{% else -%}
+_Pendente de análise do validador._
+{% endif %}
+## 7. Conclusões
+
+{% if r.analysis -%}
+{{ r.analysis.conclusao }}
+{% else -%}
+_Pendente de conclusão do validador._
+{% endif -%}

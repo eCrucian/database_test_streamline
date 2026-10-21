@@ -1,0 +1,14 @@
+id = "definition-drift"
+nome = "Definição divergente"
+descricao = "A coluna ${column} é calculada de formas diferentes: ${table_a} usa ${sources_a}; ${table_b} usa ${sources_b}."
+categoria = "consistencia"
+severidade = "media"
+padrao = "divergent_definition"
+titulo = "Divergência de ${column} entre ${table_a} e ${table_b}"
+criterio = "divergentes deve ser zero se as duas definições deveriam ser equivalentes; defina key para parear as linhas."
+sql = """
+SELECT COUNT(*) AS pares,
+       COUNT_IF(a.${column} <> b.${column}) AS divergentes
+FROM ${table_a} a
+JOIN ${table_b} b ON a.${key} = b.${key}
+"""

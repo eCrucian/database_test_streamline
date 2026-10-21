@@ -1,0 +1,17 @@
+id = "join-fanout"
+nome = "Fan-out em junção"
+descricao = "A junção multiplica linhas quando a chave não é única em um dos lados."
+categoria = "integridade"
+severidade = "alta"
+padrao = "join"
+titulo = "Unicidade das chaves em ${left_table}.${left_col} = ${right_table}.${right_col}"
+criterio = "Em cada lado esperado como único, linhas deve ser igual a chaves_distintas; diferença indica duplicação de linhas após a junção."
+sql = """
+SELECT '${left_table}' AS tabela, '${left_col}' AS chave,
+       COUNT(*) AS linhas, COUNT(DISTINCT ${left_col}) AS chaves_distintas
+FROM ${left_table}
+UNION ALL
+SELECT '${right_table}', '${right_col}',
+       COUNT(*), COUNT(DISTINCT ${right_col})
+FROM ${right_table}
+"""

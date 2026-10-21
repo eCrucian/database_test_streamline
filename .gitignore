@@ -1,0 +1,78 @@
+# Versionar apenas código, testes, configuração do projeto e uv.lock (reprodutibilidade).
+
+# --- Python / build ---
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# --- Ambientes virtuais ---
+.venv/
+venv/
+env/
+.python-version
+
+# --- Caches de ferramentas ---
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.dmypy.json
+.hypothesis/
+.tox/
+.nox/
+.cache/
+
+# --- Cobertura ---
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- Segredos e credenciais (nunca versionar) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials
+credentials.json
+*credentials*.json
+secrets.*
+.aws/
+.netrc
+
+# --- Dados e artefatos gerados pelo dbts ---
+# Mapa, planos, queries executadas, resultados, relatórios e auditoria ficam fora do git
+# (DBTS_MAP_DIR; padrão ~/.dbts). Se apontar para dentro do projeto, use um destes nomes.
+.dbts/
+dbts-mapa/
+map/
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.csv
+*.jsonl
+
+# --- Editores e sistema ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Configuração local do Claude Code ---
+.claude/settings.local.json
+
+# --- Gerado pelo job de SAST ---
+requirements-audit.txt

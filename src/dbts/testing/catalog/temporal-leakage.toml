@@ -1,0 +1,13 @@
+id = "temporal-leakage"
+nome = "Vazamento temporal"
+descricao = "Informação posterior à data de referência entra na construção da tabela (colunas de data: ${date_columns})."
+categoria = "metodologia"
+severidade = "alta"
+padrao = "date_columns"
+titulo = "Eventos após a data de referência em ${table}"
+criterio = "eventos_apos_referencia deve ser zero; defina ref_col (data de referência) e event_col (data do evento)."
+sql = """
+SELECT COUNT(*) AS linhas,
+       COUNT_IF(${event_col} > ${ref_col}) AS eventos_apos_referencia
+FROM ${table}
+"""
